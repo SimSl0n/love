@@ -21,7 +21,15 @@ export default function Home() {
     useEffect(() => {
         if (!role) return;
 
-        const peer = new Peer();
+        const peer = new Peer({
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
+                ]
+            }
+        });
         peerRef.current = peer;
 
         peer.on('open', (id) => {
