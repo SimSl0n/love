@@ -21,16 +21,55 @@ export default function Home() {
     useEffect(() => {
         if (!role) return;
 
-        const peer = new Peer({
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' }
-                ]
+        let peer = null;
+
+        async function initWebRTC() {
+            try {
+                // 1. Запрашиваем свежие TURN-сервера у Metered
+                // ВНИМАНИЕ: Замени СВОЙ_API_KEY на то, что скопировал в панели Metered!
+                const response = await fetch(
+                    "https://lovetanya.metered.live/api/v1/turn/credentials?apiKey=0ffab0d2935ee255e62b4274db1ab6adc0c4"
+                );
+                const iceServers = await response.json();
+
+                // 2. Инициализируем PeerJS с обходными серверами
+                peer = new Peer({
+                    config: {
+                        iceServers: iceServers, // Metered сам отдает массив со STUN и TURN
+                    },
+                });
+                peerRef.current = peer;
+
+                peer.on('open', (id) => {
+                    setMyPeerId(id);
+                    const baseLink = `${window.location.origin}${window.location.pathname}`;
+                    setShareLink(`${baseLink}?room=${id}&partnerRole=${role === 'danya' ? 'tanya' : 'danya'}`);
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const roomId = urlParams.get('room');
+                    if (roomId) {
+                        const conn = peer.connect(roomId);
+                        connRef.current = conn;
+                        setupConnection(conn);
+                    }
+                });
+
+                peer.on('connection', (conn) => {
+                    connRef.current = conn;
+                    setupConnection(conn);
+                });
+
+            } catch (error) {
+                console.error("Ошибка инициализации TURN серверов:", error);
             }
-        });
-        peerRef.current = peer;
+        }
+
+        initWebRTC();
+
+        return () => {
+            if (peerRef.current) peerRef.current.destroy();
+        };
+    }, [role]);
 
         peer.on('open', (id) => {
             setMyPeerId(id);
