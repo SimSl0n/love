@@ -14,9 +14,8 @@ export default function Home() {
     const [shareLink, setShareLink] = useState('');
     const [hearts, setHearts] = useState([]);
 
-    const peerRef = useRef(null);
-    const connRef = useRef(null);
-
+    const peerRef = useRef<Peer | null>(null);
+    const connRef = useRef<any>(null);
     // Инициализация WebRTC
     useEffect(() => {
         if (!role) return;
